@@ -1,11 +1,12 @@
 const { getNamedAccounts } = require("hardhat")
 const { getWeth, AMOUNT } = require("./getWeth")
-const { ethers } = require("ethers")
+const { ethers } = require("hardhat")
 
 async function main() {
   // Protocol treats everything has ERC20 token
   await getWeth() // This means we already have token(WETH) in this contract
-  const { deployer } = await getNamedAccounts()
+  // const { deployer } = await getNamedAccounts()
+  const [deployer] = await ethers.getSigners()
   // We want to interact with the aave protocol, we need the ABI and the address
 
   // Lending pool address provider: 0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5
@@ -19,33 +20,33 @@ async function main() {
   // Anytime a contract wants to interact with your token you have to approve the contract to do so.
   await approveErc20(wethTokenAddress, lendingPool.address, AMOUNT, deployer) // We are giving the lendingPool the approval to pour out the WETH token from the our account
   console.log("Depositing......")
-  await lendingPool.deposit(wethTokenAddress, AMOUNT, deployer, 0) // The deployer here is `onBehalfOf`. The onBehalfOf parameter typically refers to an address on whose behalf a certain action or transaction is being performed
+  await lendingPool.deposit(wethTokenAddress, AMOUNT, deployer.address, 0) // The deployer here is `onBehalfOf`. The onBehalfOf parameter typically refers to an address on whose behalf a certain action or transaction is being performed
   console.log("Deposited!")
 
   let { availableBorrowsETH, totalDebtETH } = await getBorrowUserData(
     lendingPool,
-    deployer,
+    deployer.address,
   )
 
   const daiPrice = await getDaiPrice() // Since getDaiPrice() returns price that means price is stored in the variable daiPrice
   const amountDaiToBorrow =
     availableBorrowsETH.toString() * 0.95 * (1 / daiPrice.toNumber()) // This means you can borrow 95% (o.95) and not all
   console.log(`You can borrow ${amountDaiToBorrow} DAI`)
-  const amountDaiToBorrowWei = ethers.parseEther(amountDaiToBorrow.toString())
+  const amountDaiToBorrowWei = ethers.utils.parseEther(amountDaiToBorrow.toString())
   // Borrow
   // We need to know how much have borrowed,how much we have in collateral and how much we can borrow
   const daiTokenAddress = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
   // const ethTokenAddress = "0x..eth CONTRACT address"
-  await borrowDai(daiTokenAddress, lendingPool, amountDaiToBorrowWei, deployer)
-  await getBorrowUserData(lendingPool, deployer)
-  await repay(amountDaiToBorrowWei, daiTokenAddress, lendingPool, deployer)
-  // await repay(amountDaiToBorrowWei, ethTokenAddress, lendingPool, deployer)
-  await getBorrowUserData(lendingPool, deployer)
+  await borrowDai(daiTokenAddress, lendingPool, amountDaiToBorrowWei, deployer.address)
+  await getBorrowUserData(lendingPool, deployer.address)
+  await repay(amountDaiToBorrowWei, daiTokenAddress, lendingPool, deployer.address)
+  // // await repay(amountDaiToBorrowWei, ethTokenAddress, lendingPool, deployer)
+  await getBorrowUserData(lendingPool, deployer.address)
 }
 
 async function repay(amount, daiAddress, lendingPool, account) {
   await approveErc20(daiAddress, lendingPool.address, account)
-  const repayTx = await lendingPool.repay(daiAddress, amount, 1, account)
+  const repayTx = await lendingPool.repay(daiAddress, amount, 2, account)
   await repayTx.wait(1)
   console.log("Repaid")
 }
@@ -66,8 +67,8 @@ async function borrowDai(
 ) {
   const borrowTx = await lendingPool.borrow(
     daiAddress,
-    amountToBorrow,
-    1,
+    amountDaiToBorrowWei,
+    2,
     0,
     account,
   )
