@@ -1,6 +1,6 @@
 const { getNamedAccounts } = require("hardhat")
 const { getWeth, AMOUNT } = require("./getWeth")
-const { ethers } = require("ethers")
+const { ethers } = require("hardhat")
 
 async function main() {
   // Protocol treats everything has ERC20 token
@@ -35,7 +35,7 @@ async function main() {
   // Borrow
   // We need to know how much have borrowed,how much we have in collateral and how much we can borrow
   const daiTokenAddress = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
-  // const ethTokenAddress = "0x..eth CONTRACT address"
+  // const ethTokenAddress = "0x.. CONTRACT address"
   await borrowDai(daiTokenAddress, lendingPool, amountDaiToBorrowWei, deployer)
   await getBorrowUserData(lendingPool, deployer)
   await repay(amountDaiToBorrowWei, daiTokenAddress, lendingPool, deployer)
@@ -45,7 +45,7 @@ async function main() {
 
 async function repay(amount, daiAddress, lendingPool, account) {
   await approveErc20(daiAddress, lendingPool.address, account)
-  const repayTx = await lendingPool.repay(daiAddress, amount, 1, account)
+  const repayTx = await lendingPool.repay(daiAddress, amount, 2, account)
   await repayTx.wait(1)
   console.log("Repaid")
 }
@@ -67,7 +67,7 @@ async function borrowDai(
   const borrowTx = await lendingPool.borrow(
     daiAddress,
     amountToBorrow,
-    1,
+    2,
     0,
     account,
   )

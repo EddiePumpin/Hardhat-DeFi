@@ -3,7 +3,7 @@ const { getNamedAccounts, ethers } = require("hardhat")
 const AMOUNT = ethers.parseEther("0.02")
 
 async function getWeth() {
-  const { deployer } = await ethers.getSigners()
+  const [deployer] = await ethers.getSigners()
   // const { deployer } = await getNamedAccounts() // In order to intract with the contract with we need an account.
   // call deposit function on the WETH contract - we need the ABI and the contract address but we used interfaces instead
   // 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
